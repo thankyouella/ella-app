@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Send, Bot, User, Sparkles, AlertCircle, Settings, X, Zap, Brain, Trash2, Plus } from 'lucide-react'
+import { Send, Bot, User, Sparkles, AlertCircle, Settings, X, Zap, Brain, Trash2, Plus, Mic, MicOff } from 'lucide-react'
 import { storage, KEYS } from '../utils/storage'
 import { RUNNING_PLAN_KEY } from './RunningCoach'
 import { STRENGTH_PLAN_KEY } from './Fuerza'
@@ -421,8 +421,10 @@ export default function ChatIA() {
   const [error,         setError]         = useState(null)
   const [actionToast,   setActionToast]   = useState(null)
   const [memoriaCount,  setMemoriaCount]  = useState(() => storage.get(MEMORIA_KEY, []).length)
-  const bottomRef = useRef(null)
-  const inputRef  = useRef(null)
+  const [isRecording,   setIsRecording]   = useState(false)
+  const bottomRef      = useRef(null)
+  const inputRef       = useRef(null)
+  const recognitionRef = useRef(null)
 
   useEffect(() => {
     storage.set(KEYS.CHAT, messages)
@@ -547,6 +549,45 @@ export default function ChatIA() {
     }
 
     return text.replace(/<ella_action>[\s\S]*?<\/ella_action>/g, '').trim()
+  }
+
+  // ─── Voice recording ───────────────────────────────────────────────────────
+  const toggleRecording = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setError('Tu navegador no soporta reconocimiento de voz. Prueba Chrome o Safari.')
+      return
+    }
+
+    if (isRecording) {
+      recognitionRef.current?.stop()
+      setIsRecording(false)
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'es-ES'
+    recognition.continuous = false
+    recognition.interimResults = false
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript
+      setInput(prev => prev ? prev + ' ' + transcript : transcript)
+      setIsRecording(false)
+      inputRef.current?.focus()
+    }
+
+    recognition.onerror = (event) => {
+      if (event.error !== 'aborted') setError('Error de micrófono: ' + event.error)
+      setIsRecording(false)
+    }
+
+    recognition.onend = () => setIsRecording(false)
+
+    recognitionRef.current = recognition
+    recognition.start()
+    setIsRecording(true)
+    setError(null)
   }
 
   // ─── Send message ───────────────────────────────────────────────────────────
@@ -723,17 +764,36 @@ export default function ChatIA() {
 
       {/* Input */}
       <div className="px-4 pb-4 pt-3 border-t border-violet-100 flex-shrink-0">
+        {isRecording && (
+          <div className="flex items-center gap-2 mb-2 px-1 animate-fade-in">
+            <span className="w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
+            <span className="text-rose-400 text-xs font-medium">Escuchando... habla ahora</span>
+          </div>
+        )}
         <div className="flex gap-2">
           <textarea
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Escríbeme algo..."
+            placeholder={isRecording ? 'Escuchando...' : 'Escríbeme algo...'}
             rows={1}
             className="flex-1 bg-violet-50 border border-violet-200 rounded-xl px-4 py-3 text-gray-900 text-sm placeholder-violet-300 focus:outline-none focus:border-violet-500/40 transition-colors resize-none leading-relaxed"
             style={{ maxHeight: 120 }}
           />
+          {/* Mic button */}
+          <button
+            onClick={toggleRecording}
+            className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-all self-end active:scale-95 ${
+              isRecording
+                ? 'bg-rose-500 text-white animate-pulse'
+                : 'border border-violet-200 text-purple-400 hover:border-violet-400 hover:text-violet-600'
+            }`}
+            title={isRecording ? 'Detener grabación' : 'Enviar audio'}
+          >
+            {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+          </button>
+          {/* Send button */}
           <button
             onClick={() => handleSend()}
             disabled={!input.trim() || loading}

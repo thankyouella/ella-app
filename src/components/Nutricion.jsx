@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Droplets, Apple, FileText, ChevronDown, ChevronUp, Edit3, Check, Pencil } from 'lucide-react'
+import { Plus, Droplets, Apple, FileText, ChevronDown, ChevronUp, Edit3, Check, Pencil, Loader, Flame } from 'lucide-react'
 import { storage } from '../utils/storage'
 
 const HIDRA_META = 2500 // ml
@@ -35,6 +35,46 @@ const MACRO_CONFIG = [
   { key: 'carbos', label: 'Carbos', unit: 'g', color: 'amber', bar: 'bg-amber-500', pill: 'bg-amber-100 text-amber-700' },
   { key: 'grasas', label: 'Grasas', unit: 'g', color: 'rose', bar: 'bg-rose-500', pill: 'bg-rose-100 text-rose-700' },
 ]
+
+// ─── Macro estimation via Claude Haiku ───────────────────────────────────────
+async function estimarMacros(nombre, descripcion) {
+  const apiKey = import.meta.env.VITE_CLAUDE_API_KEY || localStorage.getItem('ella_api_key')
+  if (!apiKey) return null
+
+  const prompt = `Estima los macronutrientes aproximados de esta comida.
+Comida: ${nombre}${descripcion ? ` — ${descripcion}` : ''}
+
+Responde ÚNICAMENTE con JSON válido, sin markdown ni texto extra:
+{"calorias":número,"proteina":número,"carbos":número,"grasas":número}
+
+Valores en enteros. Proteína, carbos y grasas en gramos. Calorías en kcal.`
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5',
+        max_tokens: 100,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const text = data.content[0].text.trim()
+    // Extract JSON even if there's surrounding text
+    const match = text.match(/\{[\s\S]*\}/)
+    if (!match) return null
+    return JSON.parse(match[0])
+  } catch {
+    return null
+  }
+}
 
 function MetasNutri({ goals, onSave }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -177,6 +217,51 @@ function HidraTracker({ ml, onAdd }) {
   )
 }
 
+// ─── Daily macro totals card ──────────────────────────────────────────────────
+function MacrosTotalesCard({ comidas, goals }) {
+  const hasMacros = comidas.some(c => c.macros)
+  if (!hasMacros) return null
+
+  const totales = comidas.reduce((acc, c) => {
+    if (!c.macros) return acc
+    return {
+      calorias: acc.calorias + (c.macros.calorias || 0),
+      proteina: acc.proteina + (c.macros.proteina || 0),
+      carbos:   acc.carbos   + (c.macros.carbos   || 0),
+      grasas:   acc.grasas   + (c.macros.grasas   || 0),
+    }
+  }, { calorias: 0, proteina: 0, carbos: 0, grasas: 0 })
+
+  return (
+    <div className="bg-gradient-to-br from-violet-600/10 to-purple-600/5 rounded-2xl border border-violet-500/20 p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Flame size={15} className="text-violet-500" />
+        <p className="text-purple-700 text-sm font-semibold">Total consumido hoy</p>
+        <span className="text-purple-300 text-[10px]">estimado por IA</span>
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {MACRO_CONFIG.map(m => {
+          const val = totales[m.key]
+          const goal = goals[m.key]
+          const pct = goal > 0 ? Math.min(Math.round((val / goal) * 100), 100) : 0
+          return (
+            <div key={m.key} className="text-center">
+              <p className="text-[10px] text-purple-400 uppercase tracking-wide mb-0.5">{m.label}</p>
+              <p className="text-gray-900 font-bold text-sm">{val}</p>
+              <p className="text-purple-300 text-[10px]">{m.unit}</p>
+              <div className="h-1 bg-violet-100 rounded-full mt-1 overflow-hidden">
+                <div className={`h-full ${m.bar} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+              </div>
+              <p className="text-purple-300 text-[10px] mt-0.5">{pct}%</p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Meal card ────────────────────────────────────────────────────────────────
 function ComidaCard({ comida }) {
   return (
     <div className="bg-violet-50 rounded-xl border border-violet-100 p-3">
@@ -185,6 +270,31 @@ function ComidaCard({ comida }) {
         <span className="text-purple-300 text-xs flex-shrink-0">{comida.hora}</span>
       </div>
       {comida.descripcion && <p className="text-purple-400 text-xs mb-2">{comida.descripcion}</p>}
+
+      {/* Macros estimados */}
+      {comida.macros && (
+        <div className="flex gap-2 flex-wrap mb-2">
+          <span className="text-[10px] bg-violet-100 text-violet-700 rounded-full px-2 py-0.5 font-medium">
+            🔥 {comida.macros.calorias} kcal
+          </span>
+          <span className="text-[10px] bg-emerald-100 text-emerald-700 rounded-full px-2 py-0.5 font-medium">
+            P {comida.macros.proteina}g
+          </span>
+          <span className="text-[10px] bg-amber-100 text-amber-700 rounded-full px-2 py-0.5 font-medium">
+            C {comida.macros.carbos}g
+          </span>
+          <span className="text-[10px] bg-rose-100 text-rose-700 rounded-full px-2 py-0.5 font-medium">
+            G {comida.macros.grasas}g
+          </span>
+        </div>
+      )}
+      {comida.estimandoMacros && (
+        <div className="flex items-center gap-1.5 mb-2">
+          <Loader size={10} className="text-violet-400 animate-spin" />
+          <span className="text-[10px] text-purple-300">Estimando macros...</span>
+        </div>
+      )}
+
       <div className="flex gap-2 flex-wrap">
         {comida.energia && <span className="text-xs text-purple-400">{comida.energia}</span>}
         {comida.digestion && <span className="text-xs text-purple-400">· {comida.digestion}</span>}
@@ -299,9 +409,26 @@ export default function Nutricion() {
     window.dispatchEvent(new Event('ella_update'))
   }
 
-  const handleSaveComida = (c) => {
-    setComidas(prev => [c, ...prev])
+  const handleSaveComida = async (c) => {
+    // Add meal immediately with estimandoMacros flag
+    const comidaConFlag = { ...c, estimandoMacros: true }
+    setComidas(prev => [comidaConFlag, ...prev])
     setShowForm(false)
+
+    // Async macro estimation
+    const macros = await estimarMacros(c.nombre, c.descripcion)
+
+    // Update the specific meal with macros (or remove flag if estimation failed)
+    setComidas(prev => {
+      const updated = prev.map(m =>
+        m.id === c.id
+          ? { ...m, macros: macros || undefined, estimandoMacros: false }
+          : m
+      )
+      storage.set(COMIDAS_KEY, updated)
+      window.dispatchEvent(new Event('ella_update'))
+      return updated
+    })
   }
 
   const handleSaveIndicaciones = () => {
@@ -342,6 +469,14 @@ export default function Nutricion() {
         {/* Comidas de hoy */}
         <div>
           <p className="text-purple-400 text-xs uppercase tracking-wider mb-3">Comidas de hoy</p>
+
+          {/* Macro totales del día */}
+          {comidasHoy.length > 0 && (
+            <div className="mb-3">
+              <MacrosTotalesCard comidas={comidasHoy} goals={goals} />
+            </div>
+          )}
+
           {comidasHoy.length === 0 ? (
             <div className="text-center py-6">
               <Apple size={28} className="text-purple-300 mx-auto mb-2" />

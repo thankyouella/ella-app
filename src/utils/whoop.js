@@ -7,6 +7,21 @@ const WHOOP_API       = 'https://api.prod.whoop.com/developer'
 // so the client_secret stays server-side. In local dev we call WHOOP directly.
 const USE_TOKEN_PROXY = window.location.hostname !== 'localhost'
 
+// ─── Auth storage helpers (single ella_whoop_auth key → synced across devices) ─
+function getAuth() {
+  try { return JSON.parse(localStorage.getItem('ella_whoop_auth') || 'null') } catch { return null }
+}
+
+function setAuth(auth) {
+  localStorage.setItem('ella_whoop_auth', JSON.stringify(auth))
+  window.dispatchEvent(new Event('ella_update')) // trigger cross-device sync
+}
+
+function clearAuth() {
+  localStorage.removeItem('ella_whoop_auth')
+  window.dispatchEvent(new Event('ella_update'))
+}
+
 // ─── PKCE helpers ─────────────────────────────────────────────────────────────
 async function generatePKCE() {
   const array = new Uint8Array(48)
@@ -52,6 +67,7 @@ export async function startWhoopOAuth() {
   const { verifier, challenge } = await generatePKCE()
   const state = crypto.randomUUID()
 
+  // These are ephemeral OAuth flow state — kept as non-ella_ keys (not synced)
   localStorage.setItem('whoop_pkce_verifier', verifier)
   localStorage.setItem('whoop_oauth_state', state)
 
@@ -88,10 +104,16 @@ export async function handleWhoopCallback(code, state) {
   }
 
   const tokens = await res.json()
-  localStorage.setItem('whoop_access_token', tokens.access_token)
-  if (tokens.refresh_token) localStorage.setItem('whoop_refresh_token', tokens.refresh_token)
-  localStorage.setItem('whoop_token_expiry', String(Date.now() + tokens.expires_in * 1000))
-  localStorage.setItem('whoop_connected_at', new Date().toISOString())
+
+  // Store all WHOOP auth in a single ella_* key so syncEngine syncs it across devices
+  setAuth({
+    access_token:  tokens.access_token,
+    refresh_token: tokens.refresh_token || null,
+    expiry:        Date.now() + tokens.expires_in * 1000,
+    connected_at:  new Date().toISOString(),
+  })
+
+  // Clean up ephemeral OAuth state
   localStorage.removeItem('whoop_pkce_verifier')
   localStorage.removeItem('whoop_oauth_state')
 
@@ -100,15 +122,15 @@ export async function handleWhoopCallback(code, state) {
 
 // ─── Token management ─────────────────────────────────────────────────────────
 export function getWhoopToken() {
-  const token  = localStorage.getItem('whoop_access_token')
-  const expiry = localStorage.getItem('whoop_token_expiry')
-  if (!token || !expiry) return null
-  if (Date.now() > parseInt(expiry) - 60000) return null // expired or near-expiry
-  return token
+  const auth = getAuth()
+  if (!auth?.access_token || !auth?.expiry) return null
+  if (Date.now() > auth.expiry - 60000) return null // expired or near-expiry
+  return auth.access_token
 }
 
 export async function refreshWhoopToken() {
-  const refreshToken = localStorage.getItem('whoop_refresh_token')
+  const auth = getAuth()
+  const refreshToken = auth?.refresh_token
   if (!refreshToken) return null
 
   try {
@@ -120,9 +142,12 @@ export async function refreshWhoopToken() {
     if (!res.ok) { disconnectWhoop(); return null }
 
     const tokens = await res.json()
-    localStorage.setItem('whoop_access_token', tokens.access_token)
-    if (tokens.refresh_token) localStorage.setItem('whoop_refresh_token', tokens.refresh_token)
-    localStorage.setItem('whoop_token_expiry', String(Date.now() + tokens.expires_in * 1000))
+    setAuth({
+      ...auth,
+      access_token:  tokens.access_token,
+      refresh_token: tokens.refresh_token || auth.refresh_token,
+      expiry:        Date.now() + tokens.expires_in * 1000,
+    })
     return tokens.access_token
   } catch {
     return null
@@ -137,14 +162,14 @@ export async function getValidToken() {
 }
 
 export function isWhoopConnected() {
-  return !!(getWhoopToken() || localStorage.getItem('whoop_refresh_token'))
+  const auth = getAuth()
+  return !!(getWhoopToken() || auth?.refresh_token)
 }
 
 export function disconnectWhoop() {
-  ;['whoop_access_token', 'whoop_refresh_token', 'whoop_token_expiry',
-    'whoop_pkce_verifier', 'whoop_oauth_state', 'whoop_connected_at'].forEach(k =>
-    localStorage.removeItem(k)
-  )
+  clearAuth()
+  localStorage.removeItem('whoop_pkce_verifier')
+  localStorage.removeItem('whoop_oauth_state')
 }
 
 // ─── API calls ────────────────────────────────────────────────────────────────
