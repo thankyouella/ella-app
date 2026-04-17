@@ -12,7 +12,7 @@ import {
 } from '../utils/whoop'
 
 const WHOOP_KEY = 'ella_whoop'
-const SYNCED_AT_KEY = 'whoop_synced_at'
+const SYNCED_AT_KEY = 'ella_whoop_synced_at'
 
 const METRICAS_DEMO = [
   { fecha: '04/07', hrv: 52, recovery: 78, strain: 8.2, sueno: 7.5 },
@@ -128,7 +128,7 @@ export default function Whoop() {
   const [grafico, setGrafico]   = useState('recovery')
   const [connected, setConnected] = useState(() => isWhoopConnected())
   const [syncing, setSyncing]   = useState(false)
-  const [syncedAt, setSyncedAt] = useState(() => localStorage.getItem(SYNCED_AT_KEY))
+  const [syncedAt, setSyncedAt] = useState(() => storage.get(SYNCED_AT_KEY, null))
   const [error, setError]       = useState(null)
   const [callbackMsg, setCallbackMsg] = useState(null)
 
@@ -168,7 +168,8 @@ export default function Whoop() {
         window.dispatchEvent(new Event('ella_update'))
       }
       const ts = new Date().toISOString()
-      localStorage.setItem(SYNCED_AT_KEY, ts)
+      storage.set(SYNCED_AT_KEY, ts)
+      window.dispatchEvent(new Event('ella_update'))
       setSyncedAt(ts)
     } catch (err) {
       setError(err.message)
@@ -184,7 +185,7 @@ export default function Whoop() {
   // Auto-sync on mount when connected and last sync was >4h ago (or never)
   useEffect(() => {
     if (!isWhoopConnected()) return
-    const lastSync = localStorage.getItem(SYNCED_AT_KEY)
+    const lastSync = storage.get(SYNCED_AT_KEY, null)
     const stale = !lastSync || (Date.now() - new Date(lastSync).getTime() > 4 * 3600 * 1000)
     if (stale) syncNow()
   }, [syncNow])
