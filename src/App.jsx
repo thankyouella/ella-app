@@ -437,7 +437,7 @@ function GlobalHeader({ onOpenSettings, darkMode, onToggleDark }) {
             className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-400 to-violet-600 flex items-center justify-center shadow-sm active:scale-90 transition-transform"
           >
             <span className="text-white text-xs font-bold">
-              {user.nombre?.[0]?.toUpperCase() || 'E'}
+              {user.nombre?.[0]?.toUpperCase() || '✦'}
             </span>
           </button>
         </div>
@@ -731,7 +731,7 @@ export default function App() {
 
   useEffect(() => {
     if (!storage.get(KEYS.USER))  storage.set(KEYS.USER,  INITIAL_DATA.user)
-    if (!storage.get(KEYS.HITOS)) storage.set(KEYS.HITOS, [INITIAL_DATA.hito_activo])
+    if (!storage.get(KEYS.HITOS)) storage.set(KEYS.HITOS, [])
 
     // Auto-navigate to WHOOP on OAuth callback
     if (new URLSearchParams(window.location.search).has('code')) {

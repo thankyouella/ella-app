@@ -14,10 +14,7 @@ const PLAN_SEMANAL_DEFAULT = [
   { dia: 'Domingo',  tipo: 'Recuperación',       descripcion: 'Caminata, movilidad, stretching',      completado: false, color: 'bg-indigo-500/20 text-indigo-400' },
 ]
 
-const CARRERAS_OFICIALES = [
-  { nombre: '10K Dubai',            fecha: '2026-04-19', distancia: '10K', estado: 'próxima',  inscrita: true },
-  { nombre: 'Half Marathon Dubai',  fecha: '2027-01-15', distancia: '21K', estado: 'objetivo', inscrita: false },
-]
+const CARRERAS_OFICIALES = []
 
 const SENSACIONES = ['Muy duro', 'Duro', 'Moderado', 'Bien', 'Volando']
 

@@ -52,10 +52,16 @@ export async function pushToSupabase() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return false
 
+    // Keys to exclude from sync (device-local preferences or ephemeral caches)
+    const EXCLUDE = ['ella_dark_mode']
+    const EXCLUDE_PREFIX = ['ella_recomendacion_hoy_']
+
     const rows = []
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
       if (!key?.startsWith('ella_')) continue
+      if (EXCLUDE.includes(key)) continue
+      if (EXCLUDE_PREFIX.some(p => key.startsWith(p))) continue
       try {
         const raw = localStorage.getItem(key)
         const value = JSON.parse(raw)

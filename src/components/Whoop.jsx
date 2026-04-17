@@ -123,7 +123,7 @@ function ManualEntryForm({ onSave, onCancel }) {
 }
 
 export default function Whoop() {
-  const [data, setData]         = useState(() => storage.get(WHOOP_KEY, METRICAS_DEMO))
+  const [data, setData]         = useState(() => storage.get(WHOOP_KEY, []))
   const [showForm, setShowForm] = useState(false)
   const [grafico, setGrafico]   = useState('recovery')
   const [connected, setConnected] = useState(() => isWhoopConnected())

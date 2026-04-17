@@ -117,19 +117,17 @@ function MetasNutri({ goals, onSave }) {
           </div>
         </div>
       ) : (
-        /* Expanded: 4 barras de progreso */
-        <div className="px-4 pb-4 space-y-3">
-          {MACRO_CONFIG.map(m => (
-            <div key={m.key}>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-purple-700 text-xs font-medium">{m.label}</span>
-                <span className="text-purple-400 text-xs">Objetivo: {goals[m.key]} {m.unit}</span>
+        /* Expanded: objetivos en grid */
+        <div className="px-4 pb-4">
+          <div className="grid grid-cols-2 gap-2">
+            {MACRO_CONFIG.map(m => (
+              <div key={m.key} className={`rounded-xl px-3 py-2.5 ${m.pill}`}>
+                <p className="text-[10px] font-semibold uppercase tracking-wide opacity-70">{m.label}</p>
+                <p className="text-base font-bold">{goals[m.key]} <span className="text-xs font-normal">{m.unit}</span></p>
               </div>
-              <div className="h-2 bg-violet-100 rounded-full overflow-hidden">
-                <div className={`h-full ${m.bar} rounded-full transition-all duration-500`} style={{ width: '0%' }} />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <p className="text-purple-300 text-[10px] text-center mt-2">Toca el lápiz para editar tus objetivos</p>
         </div>
       )}
     </div>

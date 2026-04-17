@@ -428,10 +428,10 @@ export default function Dashboard({ onTabChange }) {
           <div>
             <p className="text-purple-400 text-xs font-medium tracking-wide">{dateStr}</p>
             <h1 className="text-gray-900 text-[28px] font-bold mt-1 leading-tight">
-              Hola, <span className="text-violet-600">{user.nombre}</span>{' '}
+              {user.nombre ? <>Hola, <span className="text-violet-600">{user.nombre}</span></> : 'Bienvenida'}{' '}
               <Sparkles size={22} className="text-violet-400 inline align-text-bottom" />
             </h1>
-            <p className="text-purple-300 text-xs mt-1">{user.ciudad}</p>
+            {user.ciudad && <p className="text-purple-300 text-xs mt-1">{user.ciudad}</p>}
           </div>
           {/* Race countdown / post-race badge */}
           {countdown.days > 0 ? (

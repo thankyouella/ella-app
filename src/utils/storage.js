@@ -37,23 +37,14 @@ export const KEYS = {
 // Initial data
 export const INITIAL_DATA = {
   user: {
-    nombre: 'Ella',
-    ciudad: 'Dubai, UAE',
+    nombre: '',
+    ciudad: '',
     deporte_principal: 'Running',
-    proxima_carrera: '10K oficial',
-    fecha_carrera: '2026-04-19',
+    proxima_carrera: '',
+    fecha_carrera: '',
     altura: '',
     fecha_nacimiento: '',
     peso_actual: null,
   },
-  hito_activo: {
-    id: 'h1',
-    nombre: 'Primera carrera 10K oficial',
-    descripcion: 'Completar mi primera carrera oficial de 10K en Dubai',
-    fecha: '2026-04-19',
-    categoria: 'Running',
-    progreso: 80,
-    completado: false,
-    creado: '2026-01-01',
-  },
+  hito_activo: null,
 }

@@ -577,6 +577,7 @@ export default function ChatIA() {
           system: buildSystemPrompt(),
           messages: newMessages
             .filter(m => m.role === 'user' || m.role === 'assistant')
+            .slice(-40) // last 40 messages to avoid context limit
             .map(m => ({ role: m.role, content: m.content })),
         }),
       })

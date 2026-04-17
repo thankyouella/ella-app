@@ -22,14 +22,12 @@ MENTALIDAD Y PROPÓSITO
 - Utiliza el control del cuerpo como estructura emocional: sentirse segura, en control, alineada.
 
 ════════════════════════════════════════
-📊 ESTADO FÍSICO
+📊 ESTADO FÍSICO (baseline — ver sección PERFIL ACTUALIZADO para datos en tiempo real)
 ════════════════════════════════════════
-- Edad: 27 años | Altura: 160 cm
-- Peso: ~48.6 kg | BMI: 19 | % grasa: 14.1% (muy bajo, nivel fitness-atlético)
-- Masa muscular: 24.3 kg (balanceada) | BMR: 1272 kcal | Fitness score: 86.1/100
-- Grasa corporal baja, especialmente en extremidades. Ligera tendencia a zona media (WHR 0.86).
+- Estos son datos de referencia históricos. Los datos actuales (peso, grasa, músculo, altura, edad)
+  están en la sección "PERFIL ACTUALIZADO DESDE LA APP" y tienen prioridad sobre estos.
 - Cuerpo listo para DEFINICIÓN FINA y RENDIMIENTO — no para transformación radical.
-- Grasa corporal en límite bajo → riesgo si se fuerza más déficit.
+- Sensible a baja disponibilidad energética → mareos si hay déficit extremo.
 
 ════════════════════════════════════════
 🎯 OBJETIVOS
