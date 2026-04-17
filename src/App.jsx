@@ -375,7 +375,10 @@ function GlobalHeader({ onOpenSettings, darkMode, onToggleDark }) {
         : 'Sin carrera'
 
   return (
-    <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/97 backdrop-blur-xl border-b border-violet-100 z-50">
+    <header
+      className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/97 backdrop-blur-xl border-b border-violet-100 z-50"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
       <div className="flex items-center justify-between px-4 pt-2.5 pb-1.5">
         {/* Logo + nombre */}
         <div className="flex items-center gap-2">
@@ -485,7 +488,8 @@ function QuickLogFAB({ onAction }) {
     <>
       {open && <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />}
       {open && (
-        <div className="fixed bottom-20 right-4 z-50 flex flex-col gap-2 items-end animate-fade-in">
+        <div className="fixed right-4 z-50 flex flex-col gap-2 items-end animate-fade-in"
+          style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
           {actions.map((a, i) => (
             <button
               key={i}
@@ -502,10 +506,10 @@ function QuickLogFAB({ onAction }) {
       )}
       <button
         onClick={() => setOpen(!open)}
-        className={`fixed bottom-20 right-4 z-50 rounded-2xl shadow-lg flex items-center justify-center transition-all active:scale-95 ${
+        className={`fixed right-4 z-50 rounded-2xl shadow-lg flex items-center justify-center transition-all active:scale-95 ${
           open ? 'bg-violet-100 rotate-45' : 'bg-violet-600'
         }`}
-        style={{ width: 52, height: 52 }}
+        style={{ width: 52, height: 52, bottom: 'calc(80px + env(safe-area-inset-bottom))' }}
       >
         {open ? <X size={22} className="text-gray-900" /> : <Plus size={22} className="text-white" />}
       </button>
@@ -769,7 +773,12 @@ export default function App() {
       <div
         ref={contentRef}
         className={`flex-1 overflow-y-auto overflow-x-hidden ${isChatTab ? 'flex flex-col' : ''}`}
-        style={{ paddingTop: '76px', paddingBottom: isChatTab ? '64px' : '76px' }}
+        style={{
+          paddingTop: 'calc(76px + env(safe-area-inset-top))',
+          paddingBottom: isChatTab
+            ? 'calc(64px + env(safe-area-inset-bottom))'
+            : 'calc(80px + env(safe-area-inset-bottom))',
+        }}
       >
         {section && (
           <SubTabBar
@@ -788,7 +797,10 @@ export default function App() {
 
       {!isChatTab && <QuickLogFAB onAction={navigateTo} />}
 
-      <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/95 backdrop-blur-xl border-t border-violet-100 z-40">
+      <nav
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/95 backdrop-blur-xl border-t border-violet-100 z-40"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
         <div className="flex items-center h-[60px] px-1">
           {MAIN_TABS.map(tab => (
             <NavTab key={tab.id} tab={tab} active={activeTab === tab.id} onClick={handleTabChange} />
