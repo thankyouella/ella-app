@@ -111,10 +111,30 @@ function useCountdown(targetDate) {
   return state
 }
 
-// ─── Build HOY prompt ─────────────────────────────────────────────────────
-function buildHoyPrompt({ fecha, fase, diaCiclo, whoop, sesionHoy, indiceAyer, hitoActivo }) {
-  return `Eres el coach personal de Ella, una corredora en Dubai. Analiza su estado HOY y da recomendaciones personalizadas y concretas.
+// ─── Calcula edad ─────────────────────────────────────────────────────────
+function calcEdad(fechaNac) {
+  if (!fechaNac) return null
+  const hoy = new Date(), nac = new Date(fechaNac + 'T12:00:00')
+  let e = hoy.getFullYear() - nac.getFullYear()
+  const m = hoy.getMonth() - nac.getMonth()
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) e--
+  return e
+}
 
+// ─── Build HOY prompt ─────────────────────────────────────────────────────
+function buildHoyPrompt({ fecha, fase, diaCiclo, whoop, sesionHoy, indiceAyer, hitoActivo, userProfile, pesoActual }) {
+  const edad   = calcEdad(userProfile?.fecha_nacimiento)
+  const altura = userProfile?.altura
+  const perfilLineas = [
+    userProfile?.nombre ? `Nombre: ${userProfile.nombre}` : '',
+    userProfile?.ciudad ? `Ciudad: ${userProfile.ciudad}` : '',
+    edad   ? `Edad: ${edad} años`    : '',
+    altura ? `Altura: ${altura} cm`  : '',
+    pesoActual ? `Peso actual: ${pesoActual} kg` : '',
+  ].filter(Boolean).join(' | ')
+
+  return `Eres la coach personal de ${userProfile?.nombre || 'Ella'}, una corredora en ${userProfile?.ciudad || 'Dubai'}. Analiza su estado HOY y da recomendaciones personalizadas y concretas.
+${perfilLineas ? `\nPERFIL: ${perfilLineas}` : ''}
 FECHA: ${fecha}
 FASE DEL CICLO: ${fase ? `${fase}${diaCiclo ? `, día ${diaCiclo} del ciclo` : ''}` : 'desconocida'}
 WHOOP: ${whoop
@@ -184,6 +204,14 @@ function HoyCard() {
       const hitos      = storage.get(KEYS.HITOS, [])
       const hitoActivo = hitos.find(h => !h.completado) || null
 
+      // User profile + latest InBody weight
+      const userProfile  = storage.get(KEYS.USER, {})
+      const inbodyArr    = storage.get('ella_inbody', [])
+      const latestIB     = inbodyArr.length
+        ? [...inbodyArr].sort((a, b) => new Date(a.fecha) - new Date(b.fecha)).pop()
+        : null
+      const pesoActual   = latestIB?.peso ?? userProfile.peso_actual ?? null
+
       const prompt = buildHoyPrompt({
         fecha: today.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }),
         fase: faseName,
@@ -192,6 +220,8 @@ function HoyCard() {
         sesionHoy,
         indiceAyer,
         hitoActivo,
+        userProfile,
+        pesoActual,
       })
 
       const res = await fetch('https://api.anthropic.com/v1/messages', {

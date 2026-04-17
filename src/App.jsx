@@ -6,7 +6,7 @@ import {
   Trophy, CheckSquare, BookOpen, MessageSquare,
   Flag, Apple, TrendingUp, Settings, Download, Upload,
   User, MapPin, Calendar, Medal, Save, ChevronRight, LogOut,
-  Lock, Eye, EyeOff, Loader
+  Lock, Eye, EyeOff, Loader, Ruler, Cake
 } from 'lucide-react'
 import Dashboard    from './components/Dashboard'
 import Hitos        from './components/Hitos'
@@ -217,6 +217,38 @@ function SettingsPanel({ onClose, syncing }) {
                   </p>
                 )}
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-purple-400 text-xs mb-1 flex items-center gap-1">
+                    <Ruler size={11} /> Altura (cm)
+                  </label>
+                  <input
+                    type="number"
+                    min="100" max="220"
+                    value={user.altura || ''}
+                    onChange={e => setUser(u => ({ ...u, altura: e.target.value ? +e.target.value : '' }))}
+                    placeholder="Ej: 165"
+                    className="w-full bg-violet-50 border border-violet-200 rounded-xl px-3 py-2.5 text-gray-900 text-sm placeholder-violet-300 focus:outline-none focus:border-violet-500/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-purple-400 text-xs mb-1 flex items-center gap-1">
+                    <Cake size={11} /> Nacimiento
+                  </label>
+                  <input
+                    type="date"
+                    value={user.fecha_nacimiento || ''}
+                    onChange={e => setUser(u => ({ ...u, fecha_nacimiento: e.target.value }))}
+                    className="w-full bg-violet-50 border border-violet-200 rounded-xl px-3 py-2.5 text-gray-900 text-sm focus:outline-none focus:border-violet-500/40"
+                  />
+                </div>
+              </div>
+              {user.peso_actual && (
+                <p className="text-purple-400 text-xs px-1">
+                  ⚖️ Peso actual: <span className="text-violet-600 font-semibold">{user.peso_actual} kg</span>
+                  <span className="text-purple-300"> — se actualiza automáticamente con cada InBody</span>
+                </p>
+              )}
             </div>
 
             <button

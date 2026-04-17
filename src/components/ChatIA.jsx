@@ -17,15 +17,52 @@ const MEMORIA_CATS = {
   general:       { label: 'General',       color: 'bg-amber-500/15 text-amber-600 border-amber-500/20'    },
 }
 
+// ─── Calcula edad desde fecha de nacimiento ───────────────────────────────────
+function calcEdad(fechaNac) {
+  if (!fechaNac) return null
+  const hoy = new Date()
+  const nac = new Date(fechaNac + 'T12:00:00')
+  let edad = hoy.getFullYear() - nac.getFullYear()
+  const m = hoy.getMonth() - nac.getMonth()
+  if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) edad--
+  return edad
+}
+
 // ─── Dynamic system prompt ────────────────────────────────────────────────────
 function buildSystemPrompt() {
   const runningPlan  = localStorage.getItem(RUNNING_PLAN_KEY)
   const strengthPlan = localStorage.getItem(STRENGTH_PLAN_KEY)
-  const inbody       = localStorage.getItem('ella_inbody')
+  const inbodyRaw    = localStorage.getItem('ella_inbody')
   const hitos        = localStorage.getItem(KEYS.HITOS)
   const indice       = localStorage.getItem('ella_indice_historial')
   const whoop        = localStorage.getItem('ella_whoop')
   const memoriaRaw   = localStorage.getItem(MEMORIA_KEY)
+  const userProfile  = storage.get(KEYS.USER, {})
+
+  // Latest InBody
+  const inbodyArr  = inbodyRaw ? JSON.parse(inbodyRaw) : []
+  const latestIB   = inbodyArr.length
+    ? [...inbodyArr].sort((a, b) => new Date(a.fecha) - new Date(b.fecha)).pop()
+    : null
+
+  // Perfil físico dinámico
+  const edad   = calcEdad(userProfile.fecha_nacimiento)
+  const peso   = latestIB?.peso ?? userProfile.peso_actual ?? null
+  const altura = userProfile.altura || null
+  const imc    = altura && peso ? (peso / ((altura / 100) ** 2)).toFixed(1) : latestIB?.imc ?? null
+
+  const perfilFisico = [
+    userProfile.nombre   ? `Nombre: ${userProfile.nombre}`       : '',
+    userProfile.ciudad   ? `Ciudad: ${userProfile.ciudad}`        : '',
+    edad                 ? `Edad: ${edad} años`                   : '',
+    altura               ? `Altura: ${altura} cm`                 : '',
+    peso                 ? `Peso actual: ${peso} kg${latestIB?.fecha ? ` (medido ${new Date(latestIB.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })})` : ''}` : '',
+    latestIB?.grasa_pct  ? `Grasa corporal: ${latestIB.grasa_pct}%` : '',
+    latestIB?.musculo_kg ? `Masa muscular: ${latestIB.musculo_kg} kg` : '',
+    latestIB?.metabolismo_basal ? `Metabolismo basal: ${latestIB.metabolismo_basal} kcal` : '',
+    imc                  ? `IMC: ${imc}`                          : '',
+    userProfile.proxima_carrera ? `Próxima carrera: ${userProfile.proxima_carrera}${userProfile.fecha_carrera ? ` (${userProfile.fecha_carrera})` : ''}` : '',
+  ].filter(Boolean).join('\n')
 
   // Ciclo: prefer auto-calc from config
   const cicloConfig   = JSON.parse(localStorage.getItem('ella_ciclo_config') || 'null')
@@ -53,6 +90,12 @@ Siempre en español. Cálida, directa, experta, sin juicio. Como una amiga exper
 ${ELLA_MEMORIA}
 
 ════════════════════════════════════════
+👤 PERFIL ACTUALIZADO DESDE LA APP
+════════════════════════════════════════
+(Estos datos se actualizan automáticamente — tienen prioridad sobre el perfil base anterior)
+${perfilFisico || 'Sin datos de perfil configurados aún.'}
+
+════════════════════════════════════════
 📓 MEMORIA APRENDIDA (lo que has ido conociendo de Ella)
 ════════════════════════════════════════
 ${memoriaFmt}
@@ -67,8 +110,8 @@ ${runningPlan || 'No configurado'}
 PLAN DE FUERZA ACTUAL:
 ${strengthPlan || 'No configurado'}
 
-ÚLTIMAS MÉTRICAS INBODY:
-${inbody || 'Sin datos'}
+ÚLTIMAS MÉTRICAS INBODY (historial completo):
+${inbodyRaw || 'Sin datos'}
 
 MÉTRICAS WHOOP:
 ${whoop ? JSON.stringify(JSON.parse(whoop).slice(-3)) : 'Sin datos — WHOOP no conectado'}

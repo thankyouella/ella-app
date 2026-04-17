@@ -1,9 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { Plus, TrendingUp, TrendingDown, Minus, Upload, Loader, FileText, AlertCircle, Trash2, ChevronRight } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { storage } from '../utils/storage'
+import { storage, KEYS } from '../utils/storage'
 
 const INBODY_KEY = 'ella_inbody'
+
+// Auto-sync latest InBody weight → user profile
+function syncPesoToProfile(mediciones) {
+  if (!mediciones || mediciones.length === 0) return
+  const sorted = [...mediciones].sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+  const latest = sorted[sorted.length - 1]
+  if (latest?.peso) {
+    const user = storage.get(KEYS.USER, {})
+    storage.set(KEYS.USER, { ...user, peso_actual: latest.peso })
+  }
+}
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
@@ -301,6 +312,7 @@ export default function InBody() {
 
   useEffect(() => {
     storage.set(INBODY_KEY, mediciones)
+    syncPesoToProfile(mediciones)
     window.dispatchEvent(new Event('ella_update'))
   }, [mediciones])
 

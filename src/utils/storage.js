@@ -42,6 +42,9 @@ export const INITIAL_DATA = {
     deporte_principal: 'Running',
     proxima_carrera: '10K oficial',
     fecha_carrera: '2026-04-19',
+    altura: '',
+    fecha_nacimiento: '',
+    peso_actual: null,
   },
   hito_activo: {
     id: 'h1',
