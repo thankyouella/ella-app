@@ -5,7 +5,8 @@ import {
   Timer, Dumbbell, Watch, BarChart2, Salad, Moon, Sun,
   Trophy, CheckSquare, BookOpen, MessageSquare,
   Flag, Apple, TrendingUp, Settings, Download, Upload,
-  User, MapPin, Calendar, Medal, Save, ChevronRight, LogOut
+  User, MapPin, Calendar, Medal, Save, ChevronRight, LogOut,
+  Lock, Eye, EyeOff, Loader
 } from 'lucide-react'
 import Dashboard    from './components/Dashboard'
 import Hitos        from './components/Hitos'
@@ -535,6 +536,103 @@ function NavTab({ tab, active, onClick }) {
   )
 }
 
+// ─── Reset Password Screen ────────────────────────────────────────────────────
+function ResetPasswordScreen({ onDone }) {
+  const [password, setPassword] = useState('')
+  const [confirm,  setConfirm]  = useState('')
+  const [showPass, setShowPass] = useState(false)
+  const [loading,  setLoading]  = useState(false)
+  const [error,    setError]    = useState('')
+  const [success,  setSuccess]  = useState(false)
+
+  const handleReset = async (e) => {
+    e.preventDefault()
+    if (password !== confirm) { setError('Las contraseñas no coinciden.'); return }
+    if (password.length < 6)  { setError('Mínimo 6 caracteres.'); return }
+    setLoading(true)
+    setError('')
+    try {
+      const { error } = await supabase.auth.updateUser({ password })
+      if (error) throw error
+      setSuccess(true)
+      setTimeout(onDone, 2000)
+    } catch (err) {
+      setError(err.message || 'Error al actualizar la contraseña.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-svh bg-white flex flex-col items-center justify-center px-6 max-w-md mx-auto">
+      <div className="mb-8 text-center">
+        <img src="/logo-dark.png" alt="Ella APP" className="w-20 h-20 rounded-3xl mx-auto mb-4 shadow-lg shadow-violet-200" />
+        <h1 className="text-violet-600 font-black text-3xl tracking-[0.25em]">ELLA</h1>
+      </div>
+
+      {success ? (
+        <div className="text-center space-y-3">
+          <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 flex items-center justify-center mx-auto">
+            <CheckCircle2 size={28} className="text-emerald-500" />
+          </div>
+          <p className="text-gray-900 font-bold text-lg">¡Contraseña actualizada!</p>
+          <p className="text-purple-400 text-sm">Entrando a tu app...</p>
+        </div>
+      ) : (
+        <form onSubmit={handleReset} className="w-full space-y-4">
+          <div className="text-center mb-2">
+            <h2 className="text-gray-900 font-bold text-xl">Nueva contraseña</h2>
+            <p className="text-purple-400 text-sm mt-1">Elige una contraseña segura</p>
+          </div>
+
+          <div className="relative">
+            <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-300 pointer-events-none" />
+            <input
+              type={showPass ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Nueva contraseña (mín. 6 caracteres)"
+              required autoFocus
+              className="w-full bg-violet-50 border border-violet-200 rounded-2xl pl-10 pr-10 py-3.5 text-gray-900 text-sm placeholder-violet-300 focus:outline-none focus:border-violet-400 transition-colors"
+            />
+            <button type="button" onClick={() => setShowPass(v => !v)}
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-300 hover:text-purple-500">
+              {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+
+          <div className="relative">
+            <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-purple-300 pointer-events-none" />
+            <input
+              type={showPass ? 'text' : 'password'}
+              value={confirm}
+              onChange={e => setConfirm(e.target.value)}
+              placeholder="Confirmar contraseña"
+              required
+              className="w-full bg-violet-50 border border-violet-200 rounded-2xl pl-10 pr-4 py-3.5 text-gray-900 text-sm placeholder-violet-300 focus:outline-none focus:border-violet-400 transition-colors"
+            />
+          </div>
+
+          {error && (
+            <p className="text-rose-500 text-xs text-center bg-rose-50 border border-rose-100 rounded-xl px-3 py-2">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || !password || !confirm}
+            className="w-full flex items-center justify-center gap-2 bg-violet-600 text-white font-semibold py-3.5 rounded-2xl active:scale-[0.98] transition-all disabled:opacity-60"
+          >
+            {loading
+              ? <><Loader size={16} className="animate-spin" /> Guardando...</>
+              : <><Save size={16} /> Guardar nueva contraseña</>
+            }
+          </button>
+        </form>
+      )}
+    </div>
+  )
+}
+
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [session,    setSession]    = useState(undefined) // undefined = loading
@@ -545,8 +643,9 @@ export default function App() {
     cuerpo:  'inbody',
     vida:    'hitos',
   })
-  const [showSettings, setShowSettings] = useState(false)
-  const [darkMode,     setDarkMode]     = useState(() => localStorage.getItem('ella_dark_mode') === 'true')
+  const [showSettings,   setShowSettings]   = useState(false)
+  const [darkMode,       setDarkMode]       = useState(() => localStorage.getItem('ella_dark_mode') === 'true')
+  const [resetPassword,  setResetPassword]  = useState(false) // true when user clicks reset link
   const [, forceUpdate] = useState(0)
   const contentRef = useRef(null)
 
@@ -559,12 +658,10 @@ export default function App() {
   // ── Auth + initial sync ────────────────────────────────────────────────────
   useEffect(() => {
     if (!supabase) {
-      // Supabase not configured — run in offline/localStorage mode
       setSession(null)
       return
     }
 
-    // Get current session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       if (session) {
@@ -573,8 +670,13 @@ export default function App() {
       }
     })
 
-    // Listen for auth changes (magic link callback, logout, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        // User clicked the reset password link — show new-password screen
+        setResetPassword(true)
+        setSession(session)
+        return
+      }
       setSession(session)
       if (session) {
         setSyncing(true)
@@ -621,6 +723,11 @@ export default function App() {
   // ── Auth gate — shown when Supabase configured but no session ─────────────
   if (supabase && !session) {
     return <AuthGate />
+  }
+
+  // ── Reset password screen — shown after clicking recovery link ─────────────
+  if (resetPassword) {
+    return <ResetPasswordScreen onDone={() => setResetPassword(false)} />
   }
 
   const handleTabChange = (tabId) => {
