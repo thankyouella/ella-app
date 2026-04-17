@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, Activity, Heart, Sparkles,
   Plus, Droplets, CheckCircle2, X, Zap,
-  Timer, Dumbbell, Watch, BarChart2, Salad, Moon,
+  Timer, Dumbbell, Watch, BarChart2, Salad, Moon, Sun,
   Trophy, CheckSquare, BookOpen, MessageSquare,
   Flag, Apple, TrendingUp, Settings, Download, Upload,
   User, MapPin, Calendar, Medal, Save, ChevronRight, LogOut
@@ -342,7 +342,7 @@ function MetricPill({ Icon, value, accent = false }) {
 }
 
 // ─── Global Header ────────────────────────────────────────────────────────────
-function GlobalHeader({ onOpenSettings }) {
+function GlobalHeader({ onOpenSettings, darkMode, onToggleDark }) {
   const [, forceUpdate] = useState(0)
 
   useEffect(() => {
@@ -376,16 +376,35 @@ function GlobalHeader({ onOpenSettings }) {
   return (
     <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white/97 backdrop-blur-xl border-b border-violet-100 z-50">
       <div className="flex items-center justify-between px-4 pt-2.5 pb-1.5">
-        <span className="text-violet-600 font-black text-[18px] tracking-[0.2em]">ELLA</span>
+        {/* Logo + nombre */}
+        <div className="flex items-center gap-2">
+          <img
+            src={darkMode ? '/logo-dark.png' : '/logo-light.png'}
+            alt="Ella APP"
+            className="w-8 h-8 rounded-xl object-cover"
+          />
+          <span className="text-violet-600 font-black text-[16px] tracking-[0.18em]">ELLA</span>
+        </div>
         <span className="text-purple-400 text-[11px] font-medium">{dateStr}</span>
-        <button
-          onClick={onOpenSettings}
-          className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-400 to-violet-600 flex items-center justify-center shadow-sm active:scale-90 transition-transform"
-        >
-          <span className="text-white text-xs font-bold">
-            {user.nombre?.[0]?.toUpperCase() || 'E'}
-          </span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Dark mode toggle */}
+          <button
+            onClick={onToggleDark}
+            className="w-7 h-7 flex items-center justify-center text-purple-400 hover:text-violet-600 transition-colors active:scale-90"
+            aria-label="Cambiar tema"
+          >
+            {darkMode ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          {/* Avatar / settings */}
+          <button
+            onClick={onOpenSettings}
+            className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-400 to-violet-600 flex items-center justify-center shadow-sm active:scale-90 transition-transform"
+          >
+            <span className="text-white text-xs font-bold">
+              {user.nombre?.[0]?.toUpperCase() || 'E'}
+            </span>
+          </button>
+        </div>
       </div>
       <div className="flex items-center gap-1.5 px-4 pb-2.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
         <MetricPill Icon={Watch}    value={latestWhoop?.recovery != null ? `${latestWhoop.recovery}% Recov` : '-- Recov'} />
@@ -527,8 +546,15 @@ export default function App() {
     vida:    'hitos',
   })
   const [showSettings, setShowSettings] = useState(false)
+  const [darkMode,     setDarkMode]     = useState(() => localStorage.getItem('ella_dark_mode') === 'true')
   const [, forceUpdate] = useState(0)
   const contentRef = useRef(null)
+
+  // ── Dark mode — apply to <html> and persist ───────────────────────────────
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode)
+    localStorage.setItem('ella_dark_mode', String(darkMode))
+  }, [darkMode])
 
   // ── Auth + initial sync ────────────────────────────────────────────────────
   useEffect(() => {
@@ -586,9 +612,7 @@ export default function App() {
   if (session === undefined) {
     return (
       <div className="min-h-svh bg-white flex flex-col items-center justify-center max-w-md mx-auto">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center mb-4 animate-pulse">
-          <Sparkles size={22} className="text-white" />
-        </div>
+        <img src="/logo-dark.png" alt="Ella APP" className="w-16 h-16 rounded-2xl mb-4 animate-pulse" />
         <p className="text-purple-400 text-sm">Cargando...</p>
       </div>
     )
@@ -629,7 +653,11 @@ export default function App() {
     <div className="min-h-svh bg-white flex flex-col max-w-md mx-auto relative select-none">
       {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} syncing={syncing} />}
 
-      <GlobalHeader onOpenSettings={() => setShowSettings(true)} />
+      <GlobalHeader
+        onOpenSettings={() => setShowSettings(true)}
+        darkMode={darkMode}
+        onToggleDark={() => setDarkMode(d => !d)}
+      />
 
       <div
         ref={contentRef}

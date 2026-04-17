@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../utils/supabase'
-import { Sparkles, Mail, ArrowRight, CheckCircle, Loader } from 'lucide-react'
+import { Mail, ArrowRight, CheckCircle, Loader } from 'lucide-react'
 
 export default function AuthGate() {
   const [email, setEmail]   = useState('')
@@ -33,9 +33,11 @@ export default function AuthGate() {
 
       {/* Logo */}
       <div className="mb-8 text-center">
-        <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-violet-200">
-          <Sparkles size={28} className="text-white" />
-        </div>
+        <img
+          src="/logo-dark.png"
+          alt="Ella APP"
+          className="w-20 h-20 rounded-3xl mx-auto mb-4 shadow-lg shadow-violet-200"
+        />
         <h1 className="text-violet-600 font-black text-3xl tracking-[0.25em]">ELLA</h1>
         <p className="text-purple-400 text-sm mt-1">Tu app de coaching personal</p>
       </div>
